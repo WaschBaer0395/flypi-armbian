@@ -21,10 +21,14 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/armbian/build.git ~/armbian-official
           mkdir -p ~/armbian-official/userpatches/config/boards
+          mkdir -p ~/armbian-official/userpatches/u-boot/u-boot-sunxi
+          
           if [ -f "userpatches/config/boards/flypiv1.conf" ]; then
             cp userpatches/config/boards/flypiv1.conf ~/armbian-official/userpatches/config/boards/
-          elif [ -f "config/boards/flypiv1.conf" ]; then
-            cp config/boards/flypiv1.conf ~/armbian-official/userpatches/config/boards/
+          fi
+          
+          if [ -f "userpatches/u-boot/u-boot-sunxi/fly_pi_v1_defconfig" ]; then
+            cp userpatches/u-boot/u-boot-sunxi/fly_pi_v1_defconfig ~/armbian-official/userpatches/u-boot/u-boot-sunxi/
           fi
 
       - name: Run Build Script
