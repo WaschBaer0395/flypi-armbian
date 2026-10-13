@@ -1,0 +1,41 @@
+name: Build Armbian Fly Pi v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build-armbian:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Official Armbian Build Environment
+        run: |
+          git clone --depth 1 https://github.com/armbian/build.git ~/armbian-official
+          mkdir -p ~/armbian-official/userpatches/config/boards
+          
+          # Copy your custom board configuration file into userpatches
+          if [ -f "config/boards/flypiv1.conf" ]; then
+            cp config/boards/flypiv1.conf ~/armbian-official/userpatches/config/boards/
+          elif [ -f "userpatches/config/boards/flypiv1.conf" ]; then
+            cp userpatches/config/boards/flypiv1.conf ~/armbian-official/userpatches/config/boards/
+          fi
+
+          # Apply the standard Allwinner H5 U-Boot fallback configuration fix
+          sed -i 's/BOOTCONFIG="fly_pi_v1_defconfig"/BOOTCONFIG="orangepi_pc2_defconfig"/' ~/armbian-official/userpatches/config/boards/flypiv1.conf || true
+
+      - name: Run Build Script
+        run: |
+          cd ~/armbian-official
+          ./compile.sh build BOARD=flypiv1 BRANCH=current RELEASE=bullseye BUILD_MINIMAL=yes BUILD_DESKTOP=no KERNEL_CONFIGURE=no
+
+      - name: Upload Generated Image Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: armbian-flypiv1-bullseye-image
+          path: ~/armbian-official/output/images/*.img*
