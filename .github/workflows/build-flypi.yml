@@ -1,4 +1,4 @@
-name: Build Fly Pi Armbian
+name: Build Fly Pi 
 on:
   workflow_dispatch:
 jobs:
