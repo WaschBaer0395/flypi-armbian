@@ -18,18 +18,20 @@ jobs:
           git clone https://github.com/armbian/build armbian
           cd armbian
           git checkout "$(cat ../patches-repo/armbian-version.txt)"
+          git rev-parse HEAD > /tmp/base
           git config user.name ci
           git config user.email ci@example.com
           git am ../patches-repo/patches/*.patch
 
-      - name: Disable SD card-detect (U-Boot + kernel DTS)
+      - name: Disable SD card-detect
         working-directory: armbian
         run: |
-          FILES=$(grep -rl "mellowfly" patch || true)
-          echo "Files touching the board:"; echo "$FILES"
-          echo "--- cd-gpios before ---"; grep -n "cd-gpios" $FILES || true
-          sed -i 's/^+\([[:space:]]*\)cd-gpios = .*/+\1broken-cd;/' $FILES
-          echo "--- broken-cd after ---"; grep -n "broken-cd" $FILES
+          git diff --name-only "$(cat /tmp/base)" HEAD | tee /tmp/files
+          echo "--- cd-gpios / mmc0 lines in those files ---"
+          grep -n "cd-gpios\|&mmc0\|broken-cd" $(cat /tmp/files) || echo "none found"
+          sed -i 's/^\(+\?[[:space:]]*\)cd-gpios = .*/\1broken-cd;/' $(cat /tmp/files) || true
+          echo "--- after ---"
+          grep -n "cd-gpios\|broken-cd" $(cat /tmp/files) || echo "none found"
 
       - name: Build
         working-directory: armbian
