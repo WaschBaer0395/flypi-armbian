@@ -34,6 +34,12 @@ jobs:
       - name: Run Build Script
         run: |
           cd ~/armbian-official
+          
+          # Hook into Armbian's source directory once u-boot sources are fetched or patch them via a post-unpack hook
+          # Alternatively, place the defconfig where Armbian's u-boot build routine can find it:
+          mkdir -p cache/sources/u-boot/u-boot-sunxi*/configs/ || true
+          cp userpatches/u-boot/u-boot-sunxi/fly_pi_v1_defconfig cache/sources/u-boot/u-boot-sunxi*/configs/ 2>/dev/null || true
+          
           ./compile.sh build BOARD=flypiv1 BRANCH=current RELEASE=bullseye BUILD_MINIMAL=yes BUILD_DESKTOP=no KERNEL_CONFIGURE=no
 
       - name: Upload Generated Image Artifact
