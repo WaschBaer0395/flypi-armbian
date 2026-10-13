@@ -1,0 +1,44 @@
+name: Build Fly Pi Armbian
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+
+      - uses: actions/checkout@v4
+        with:
+          repository: reemo3dp/mellowfly-geminipi-armbian
+          path: patches-repo
+
+      - name: Armbian + patches
+        run: |
+          git clone https://github.com/armbian/build armbian
+          cd armbian
+          git checkout "$(cat ../patches-repo/armbian-version.txt)"
+          git config user.name ci
+          git config user.email ci@example.com
+          git am ../patches-repo/patches/*.patch
+
+      - name: Disable SD card-detect (U-Boot + kernel DTS)
+        working-directory: armbian
+        run: |
+          FILES=$(grep -rl "mellowfly" patch || true)
+          echo "Files touching the board:"; echo "$FILES"
+          echo "--- cd-gpios before ---"; grep -n "cd-gpios" $FILES || true
+          sed -i 's/^+\([[:space:]]*\)cd-gpios = .*/+\1broken-cd;/' $FILES
+          echo "--- broken-cd after ---"; grep -n "broken-cd" $FILES
+
+      - name: Build
+        working-directory: armbian
+        run: |
+          sudo ./compile.sh BOARD=mellowflygeminipi BRANCH=current \
+            RELEASE=noble BUILD_MINIMAL=yes BUILD_DESKTOP=no \
+            KERNEL_CONFIGURE=no COMPRESS_OUTPUTIMAGE=sha,xz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flypi-image
+          path: armbian/output/images/*
