@@ -35,6 +35,9 @@ jobs:
           cp patches/userpatches/config/boards/flypiv1.conf build/config/boards/flypiv1.conf
           find build/userpatches -type f
 
+      - name: Patch Armbian for end-of-life Bullseye
+        run: bash patches/scripts/patch-armbian-eol-bullseye.sh build
+
       - name: Build image
         working-directory: build
         run: |
