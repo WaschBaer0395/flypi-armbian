@@ -1,35 +1,59 @@
-name: Build Armbian Fly Pi v1
+name: Build Armbian Fly Pi v1 (Bullseye, minimal)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - master
+
+env:
+  # Armbian release branch the Mellow fork is based on (22.08, kernel 5.15, u-boot 2021.10).
+  # Newer Armbian no longer supports this setup; do NOT point this at main.
+  ARMBIAN_REF: v22.08
 
 jobs:
-  build-armbian:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-22.04      # 22.08 supports jammy hosts, not 24.04
+    timeout-minutes: 360
     steps:
-      - name: Checkout Repository
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force || true
+          df -h /
+
+      - name: Checkout this repo
         uses: actions/checkout@v4
+        with:
+          path: patches
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        
-      - name: Setup Official Armbian Build Environment
-        run: |
-          git clone --depth 1 https://github.com/armbian/build.git ~/armbian-official
-          mkdir -p ~/armbian-official/userpatches
-          cp -r userpatches/* ~/armbian-official/userpatches/ 2>/dev/null || true
+      - name: Checkout Armbian build framework
+        run: git clone --depth 1 --branch "$ARMBIAN_REF" https://github.com/armbian/build.git build
 
-      - name: Run Build Script
+      - name: Install userpatches
         run: |
-          cd ~/armbian-official
-          ./compile.sh build BOARD=flypiv1 BRANCH=current RELEASE=bullseye BUILD_MINIMAL=yes BUILD_DESKTOP=no KERNEL_CONFIGURE=no
-          
-      - name: Upload Generated Image Artifact
+          rm -rf build/userpatches
+          cp -a patches/userpatches build/userpatches
+          find build/userpatches -type f
+
+      - name: Build image
+        working-directory: build
+        run: |
+          sudo ./compile.sh \
+            BOARD=flypiv1 BRANCH=current RELEASE=bullseye \
+            BUILD_MINIMAL=yes BUILD_DESKTOP=no KERNEL_CONFIGURE=no \
+            COMPRESS_OUTPUTIMAGE=sha,xz
+
+      - name: Upload image
         uses: actions/upload-artifact@v4
         with:
-          name: armbian-flypiv1-bullseye-image
-          path: ~/armbian-official/output/images/*.img*
+          name: armbian-flypiv1-bullseye-minimal
+          path: |
+            build/output/images/*.img.xz
+            build/output/images/*.sha
+          if-no-files-found: error
+
+      - name: Upload logs (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: build/output/debug/
+          if-no-files-found: ignore
