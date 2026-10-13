@@ -26,7 +26,6 @@ jobs:
           elif [ -f "config/boards/flypiv1.conf" ]; then
             cp config/boards/flypiv1.conf ~/armbian-official/userpatches/config/boards/
           fi
-          sed -i 's/BOOTCONFIG="fly_pi_v1_defconfig"/BOOTCONFIG="orangepi_pc2_defconfig"/' ~/armbian-official/userpatches/config/boards/flypiv1.conf || true
 
       - name: Run Build Script
         run: |
