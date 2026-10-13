@@ -1,0 +1,21 @@
+Subject: [PATCH] sunxi: do not run "usb start" in preboot on Fly Pi v1
+
+U-Boot resets the Fly Pi v1 while enumerating USB bus usb@1c1b000 during
+preboot, so the board reboot-loops before the kernel is loaded. Keep the
+splash loading but skip "usb start" (the kernel initialises USB itself).
+
+---
+diff --git a/include/configs/sunxi-common.h b/include/configs/sunxi-common.h
+--- a/include/configs/sunxi-common.h
++++ b/include/configs/sunxi-common.h
+@@ -406,8 +406,8 @@
+ #ifdef CONFIG_USB_KEYBOARD
+ #if defined CONFIG_VIDEO || defined CONFIG_DM_VIDEO
+ #define CONSOLE_STDIN_SETTINGS \
+-	"preboot=run loadsplash; usb start\0" \
+-	"stdin=serial,usbkbd\0"
++	"preboot=run loadsplash\0" \
++	"stdin=serial\0"
+ #else
+ #define CONSOLE_STDIN_SETTINGS \
+ 	"stdin=serial,usbkbd\0"
