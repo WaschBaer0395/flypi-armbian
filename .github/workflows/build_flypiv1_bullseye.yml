@@ -14,22 +14,18 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Setup Official Armbian Build Environment & Copy Board Config
         run: |
-          # Clone official Armbian build repo
           git clone --depth 1 https://github.com/armbian/build.git ~/armbian-official
-          
-          # Create userpatches board directory in the official build repo
           mkdir -p ~/armbian-official/userpatches/config/boards
-          
-          # Copy your board configuration file explicitly
           if [ -f "userpatches/config/boards/flypiv1.conf" ]; then
             cp userpatches/config/boards/flypiv1.conf ~/armbian-official/userpatches/config/boards/
           elif [ -f "config/boards/flypiv1.conf" ]; then
             cp config/boards/flypiv1.conf ~/armbian-official/userpatches/config/boards/
           fi
-
-          # Apply the U-Boot fallback configuration fix for Allwinner H5 compatibility
           sed -i 's/BOOTCONFIG="fly_pi_v1_defconfig"/BOOTCONFIG="orangepi_pc2_defconfig"/' ~/armbian-official/userpatches/config/boards/flypiv1.conf || true
 
       - name: Run Build Script
