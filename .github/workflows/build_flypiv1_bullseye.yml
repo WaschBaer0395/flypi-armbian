@@ -31,6 +31,8 @@ jobs:
         run: |
           rm -rf build/userpatches
           cp -a patches/userpatches build/userpatches
+          # Armbian 22.08 only reads board files from its own config/boards (not userpatches)
+          cp patches/userpatches/config/boards/flypiv1.conf build/config/boards/flypiv1.conf
           find build/userpatches -type f
 
       - name: Build image
